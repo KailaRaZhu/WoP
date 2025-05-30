@@ -85,7 +85,7 @@
             height: 350px;
             background-color: rgba(255, 107, 107, 0.3);
             border: 2px solid #ff6b6b;
-            animation: rotate-seconds 60s linear infinite;
+            animation: rotate-seconds 10s linear infinite; /* 6x faster: 60s / 6 = 10s (smooth) */
         }
 
         .middle-ring {
@@ -93,7 +93,7 @@
             height: 250px;
             background-color: rgba(78, 205, 196, 0.3);
             border: 2px solid #4ecdc4;
-            animation: rotate-minutes 3600s linear infinite; /* 60 minutes = 3600 seconds */
+            animation: rotate-minutes 600s steps(60, end) infinite; /* 6x faster: discrete steps, 60 steps per rotation */
         }
 
         .inner-ring {
@@ -101,53 +101,34 @@
             height: 150px;
             background-color: rgba(255, 230, 109, 0.3);
             border: 2px solid #ffe66d;
-            animation: rotate-hours 43200s linear infinite; /* 12 hours = 43200 seconds */
+            animation: rotate-hours 7200s steps(12, end) infinite; /* 6x faster: discrete steps, 12 steps per rotation */
         }
 
         .pip {
             position: absolute;
-            border-radius: 50%;
             box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
         }
 
-        .outer-pip {
-            width: 4px;
-            height: 4px;
-            background-color: #ff6b6b;
-        }
-
-        .middle-pip {
-            width: 5px;
-            height: 5px;
-            background-color: #4ecdc4;
-        }
-
-        .inner-pip {
-            width: 6px;
-            height: 6px;
-            background-color: #ffe66d;
-        }
-
-        /* Special indicator pips for 0 position */
+        /* Hand indicator pips */
         .outer-indicator-pip {
-            width: 8px;
-            height: 8px;
+            width: 3px;
+            height: 18px;
             background-color: white;
-            border: 2px solid #ff6b6b;
+            border: 1px solid #ff6b6b;
         }
 
         .middle-indicator-pip {
-            width: 9px;
-            height: 9px;
+            width: 3px;
+            height: 16px;
             background-color: white;
-            border: 2px solid #4ecdc4;
+            border: 1px solid #4ecdc4;
         }
 
         .inner-indicator-pip {
-            width: 10px;
-            height: 10px;
+            width: 3px;
+            height: 14px;
             background-color: white;
-            border: 2px solid #ffe66d;
+            border: 1px solid #ffe66d;
         }
 
         .center-dot {
@@ -258,88 +239,76 @@
     
     <script>
         function createPips() {
-            // Outer ring - 60 pips (seconds)
+            // Outer ring - single hand indicator (seconds)
             const outerRing = document.getElementById('outer-ring');
             const outerRadius = 175; // Half of 350px
-            for (let i = 0; i < 60; i++) {
-                const angle = (i * 360 / 60) * Math.PI / 180;
-                const pip = document.createElement('div');
-                
-                // Special indicator for 0 position (12 o'clock)
-                if (i === 0) {
-                    pip.className = 'pip outer-indicator-pip';
-                } else {
-                    pip.className = 'pip outer-pip';
-                }
-                
-                const x = Math.cos(angle - Math.PI/2) * (outerRadius - 12); // -PI/2 to start at top
-                const y = Math.sin(angle - Math.PI/2) * (outerRadius - 12);
-                pip.style.left = `calc(50% + ${x}px - ${i === 0 ? '4px' : '2px'})`;
-                pip.style.top = `calc(50% + ${y}px - ${i === 0 ? '4px' : '2px'})`;
-                outerRing.appendChild(pip);
-            }
+            const outerPip = document.createElement('div');
+            outerPip.className = 'pip outer-indicator-pip';
+            
+            // Position at 12 o'clock (0 degrees)
+            const outerX = Math.cos(-Math.PI/2) * (outerRadius - 15);
+            const outerY = Math.sin(-Math.PI/2) * (outerRadius - 15);
+            outerPip.style.left = `calc(50% + ${outerX}px - 1.5px)`; // Center the line width
+            outerPip.style.top = `calc(50% + ${outerY}px - 9px)`; // Center the line height
+            outerPip.style.transform = `rotate(0deg)`;
+            outerPip.style.transformOrigin = 'center bottom';
+            outerRing.appendChild(outerPip);
 
-            // Middle ring - 60 pips (minutes)
+            // Middle ring - single hand indicator (minutes)
             const middleRing = document.getElementById('middle-ring');
             const middleRadius = 125; // Half of 250px
-            for (let i = 0; i < 60; i++) {
-                const angle = (i * 360 / 60) * Math.PI / 180;
-                const pip = document.createElement('div');
-                
-                // Special indicator for 0 position (12 o'clock)
-                if (i === 0) {
-                    pip.className = 'pip middle-indicator-pip';
-                } else {
-                    pip.className = 'pip middle-pip';
-                }
-                
-                const x = Math.cos(angle - Math.PI/2) * (middleRadius - 10);
-                const y = Math.sin(angle - Math.PI/2) * (middleRadius - 10);
-                pip.style.left = `calc(50% + ${x}px - ${i === 0 ? '4.5px' : '2.5px'})`;
-                pip.style.top = `calc(50% + ${y}px - ${i === 0 ? '4.5px' : '2.5px'})`;
-                middleRing.appendChild(pip);
-            }
+            const middlePip = document.createElement('div');
+            middlePip.className = 'pip middle-indicator-pip';
+            
+            // Position at 12 o'clock (0 degrees)
+            const middleX = Math.cos(-Math.PI/2) * (middleRadius - 12);
+            const middleY = Math.sin(-Math.PI/2) * (middleRadius - 12);
+            middlePip.style.left = `calc(50% + ${middleX}px - 1.5px)`; // Center the line width
+            middlePip.style.top = `calc(50% + ${middleY}px - 8px)`; // Center the line height
+            middlePip.style.transform = `rotate(0deg)`;
+            middlePip.style.transformOrigin = 'center bottom';
+            middleRing.appendChild(middlePip);
 
-            // Inner ring - 24 pips (hours)
+            // Inner ring - single hand indicator (hours)
             const innerRing = document.getElementById('inner-ring');
             const innerRadius = 75; // Half of 150px
-            for (let i = 0; i < 24; i++) {
-                const angle = (i * 360 / 24) * Math.PI / 180;
-                const pip = document.createElement('div');
-                
-                // Special indicator for 0 position (12 o'clock)
-                if (i === 0) {
-                    pip.className = 'pip inner-indicator-pip';
-                } else {
-                    pip.className = 'pip inner-pip';
-                }
-                
-                const x = Math.cos(angle - Math.PI/2) * (innerRadius - 8);
-                const y = Math.sin(angle - Math.PI/2) * (innerRadius - 8);
-                pip.style.left = `calc(50% + ${x}px - ${i === 0 ? '5px' : '3px'})`;
-                pip.style.top = `calc(50% + ${y}px - ${i === 0 ? '5px' : '3px'})`;
-                innerRing.appendChild(pip);
-            }
+            const innerPip = document.createElement('div');
+            innerPip.className = 'pip inner-indicator-pip';
+            
+            // Position at 12 o'clock (0 degrees)
+            const innerX = Math.cos(-Math.PI/2) * (innerRadius - 10);
+            const innerY = Math.sin(-Math.PI/2) * (innerRadius - 10);
+            innerPip.style.left = `calc(50% + ${innerX}px - 1.5px)`; // Center the line width
+            innerPip.style.top = `calc(50% + ${innerY}px - 7px)`; // Center the line height
+            innerPip.style.transform = `rotate(0deg)`;
+            innerPip.style.transformOrigin = 'center bottom';
+            innerRing.appendChild(innerPip);
         }
 
-        // Sync clock with real time
+        // Sync clock with real time (6x faster)
         function syncClock() {
             const now = new Date();
-            const seconds = now.getSeconds();
-            const minutes = now.getMinutes();
-            const hours = now.getHours() % 12; // 12-hour format
             
-            // Calculate initial rotation offsets based on current time
-            const secondsRotation = (seconds * 6); // 6 degrees per second
-            const minutesRotation = (minutes * 6 + seconds * 0.1); // 6 degrees per minute + smooth seconds
-            const hoursRotation = (hours * 30 + minutes * 0.5); // 30 degrees per hour + smooth minutes
+            // Calculate total elapsed seconds since start of day, then multiply by 6
+            const realSecondsToday = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+            const fastSecondsTotal = (realSecondsToday * 6) % (12 * 3600); // Wrap around every 12 hours
+            
+            // Break down the fast time into hours, minutes, seconds
+            const hours = Math.floor(fastSecondsTotal / 3600) % 12;
+            const minutes = Math.floor((fastSecondsTotal % 3600) / 60);
+            const seconds = Math.floor(fastSecondsTotal % 60);
+            
+            // Calculate initial rotation offsets based on fast time
+            const secondsRotation = (seconds * 6); // 6 degrees per second (smooth)
+            const minutesRotation = (minutes * 6); // 6 degrees per minute (discrete steps only)
+            const hoursRotation = (hours * 30); // 30 degrees per hour (discrete steps only)
             
             // Apply initial rotations
             document.getElementById('outer-ring').style.transform = `rotate(${secondsRotation}deg)`;
             document.getElementById('middle-ring').style.transform = `rotate(${minutesRotation}deg)`;
             document.getElementById('inner-ring').style.transform = `rotate(${hoursRotation}deg)`;
             
-            // Calculate animation delays to sync with real time
+            // Calculate animation delays to sync with fast time
             const secondsDelay = -seconds;
             const minutesDelay = -(minutes * 60 + seconds);
             const hoursDelay = -(hours * 3600 + minutes * 60 + seconds);
