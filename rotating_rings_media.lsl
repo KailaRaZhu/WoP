@@ -55,9 +55,7 @@ setupMedia()
         PRIM_MEDIA_CURRENT_URL, WEB_URL,
         PRIM_MEDIA_PERMS_INTERACT, PRIM_MEDIA_PERM_OWNER | PRIM_MEDIA_PERM_GROUP,
         PRIM_MEDIA_PERMS_CONTROL, PRIM_MEDIA_PERM_OWNER | PRIM_MEDIA_PERM_GROUP,
-        PRIM_MEDIA_CONTROLS, PRIM_MEDIA_CONTROLS_MINI,
-        PRIM_MEDIA_WHITELIST_ENABLE, TRUE,
-        PRIM_MEDIA_WHITELIST, [WEB_URL]
+        PRIM_MEDIA_CONTROLS, PRIM_MEDIA_CONTROLS_MINI
     ];
     
     // Apply media parameters to the specified face
@@ -68,15 +66,18 @@ setupMedia()
         llOwnerSay("✓ Media successfully applied to face " + (string)MEDIA_FACE);
         llOwnerSay("✓ Displaying: " + WEB_URL);
         llOwnerSay("✓ Touch to refresh media");
+        
+        // Set whitelist separately to avoid list nesting issues
+        llSetPrimMediaParams(MEDIA_FACE, [
+            PRIM_MEDIA_WHITELIST_ENABLE, TRUE,
+            PRIM_MEDIA_WHITELIST, WEB_URL
+        ]);
     }
     else
     {
         llOwnerSay("✗ Failed to set media parameters. Error code: " + (string)result);
         llOwnerSay("Check that the prim face exists and media is enabled.");
     }
-    
-    // Optional: Set link media for multi-prim objects
-    // llSetLinkMedia(LINK_THIS, MEDIA_FACE, media_params);
 }
 
 // Alternative function using llSetLinkMedia for multi-prim linksets
