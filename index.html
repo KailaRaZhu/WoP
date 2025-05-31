@@ -155,28 +155,27 @@
             color: #ffe66d;
         }
 
-        /* User Info Panel */
+        /* User Info Panel - High Compatibility Version */
         .user-info-panel {
-            position: fixed;
+            position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #333;
             padding: 15px;
-            font-family: 'Courier New', monospace;
+            font-family: monospace;
             font-size: 11px;
             color: #00ff00;
-            max-width: 350px;
-            max-height: 80vh;
-            overflow-y: auto;
-            backdrop-filter: blur(10px);
-            z-index: 1000;
+            max-width: 300px;
+            max-height: 400px;
+            overflow-y: scroll;
+            z-index: 9999;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
         }
 
         .panel-header {
             margin-bottom: 10px;
-            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+            border-bottom: 1px solid #333;
             padding-bottom: 5px;
         }
 
@@ -602,339 +601,227 @@
             }
         }
 
-        // User Information Collection System
-        async function collectUserData() {
-            const userInfo = {};
+        // User Information Collection System - High Compatibility Version
+        function collectUserData() {
+            var userInfo = {};
             
             try {
-                // Basic Browser Info
-                userInfo.userAgent = navigator.userAgent;
-                userInfo.platform = navigator.platform;
-                userInfo.language = navigator.language;
-                userInfo.languages = navigator.languages ? navigator.languages.join(', ') : 'N/A';
-                userInfo.cookieEnabled = navigator.cookieEnabled;
-                userInfo.onLine = navigator.onLine;
-                userInfo.doNotTrack = navigator.doNotTrack || 'Not set';
+                // Basic Browser Info (widely supported)
+                userInfo.userAgent = navigator.userAgent || 'N/A';
+                userInfo.platform = navigator.platform || 'N/A';
+                userInfo.language = navigator.language || 'N/A';
+                userInfo.cookieEnabled = navigator.cookieEnabled || false;
+                userInfo.onLine = navigator.onLine || false;
                 
-                // Screen & Display Info
-                userInfo.screenWidth = screen.width;
-                userInfo.screenHeight = screen.height;
-                userInfo.screenColorDepth = screen.colorDepth;
-                userInfo.screenPixelDepth = screen.pixelDepth;
-                userInfo.screenAvailWidth = screen.availWidth;
-                userInfo.screenAvailHeight = screen.availHeight;
-                userInfo.devicePixelRatio = window.devicePixelRatio;
+                // Screen & Display Info (very basic)
+                userInfo.screenWidth = screen.width || 'N/A';
+                userInfo.screenHeight = screen.height || 'N/A';
+                userInfo.screenColorDepth = screen.colorDepth || 'N/A';
+                userInfo.devicePixelRatio = window.devicePixelRatio || 1;
                 
                 // Window Info
-                userInfo.windowWidth = window.innerWidth;
-                userInfo.windowHeight = window.innerHeight;
-                userInfo.windowOuterWidth = window.outerWidth;
-                userInfo.windowOuterHeight = window.outerHeight;
+                userInfo.windowWidth = window.innerWidth || 'N/A';
+                userInfo.windowHeight = window.innerHeight || 'N/A';
                 
-                // Timezone & Date
-                userInfo.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                userInfo.timezoneOffset = new Date().getTimezoneOffset();
-                userInfo.currentTime = new Date().toISOString();
+                // Timezone & Date (basic)
+                var now = new Date();
+                userInfo.currentTime = now.toString();
+                userInfo.timezoneOffset = now.getTimezoneOffset() + ' minutes';
                 
-                // Hardware Info
+                // Try to get timezone (if supported)
+                try {
+                    if (Intl && Intl.DateTimeFormat) {
+                        userInfo.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    } else {
+                        userInfo.timezone = 'N/A';
+                    }
+                } catch (e) {
+                    userInfo.timezone = 'N/A';
+                }
+                
+                // Hardware Info (basic)
                 userInfo.hardwareConcurrency = navigator.hardwareConcurrency || 'N/A';
                 userInfo.maxTouchPoints = navigator.maxTouchPoints || 'N/A';
-                userInfo.deviceMemory = navigator.deviceMemory ? `${navigator.deviceMemory} GB` : 'N/A';
                 
-                // Connection Info
-                if (navigator.connection) {
-                    const conn = navigator.connection;
-                    userInfo.connectionType = conn.effectiveType || 'N/A';
-                    userInfo.connectionSpeed = conn.downlink ? `${conn.downlink} Mbps` : 'N/A';
-                    userInfo.connectionRtt = conn.rtt ? `${conn.rtt} ms` : 'N/A';
-                    userInfo.saveData = conn.saveData || false;
-                } else {
-                    userInfo.connectionType = 'N/A';
-                    userInfo.connectionSpeed = 'N/A';
-                    userInfo.connectionRtt = 'N/A';
-                    userInfo.saveData = 'N/A';
-                }
+                // Browser Features (basic checks)
+                userInfo.localStorage = (typeof Storage !== "undefined") ? 'Supported' : 'Not supported';
+                userInfo.cookies = navigator.cookieEnabled ? 'Enabled' : 'Disabled';
                 
-                // Browser Features
-                userInfo.localStorage = typeof(Storage) !== "undefined";
-                userInfo.sessionStorage = typeof(Storage) !== "undefined";
-                userInfo.indexedDB = 'indexedDB' in window;
-                userInfo.webGL = !!window.WebGLRenderingContext;
-                userInfo.webGL2 = !!window.WebGL2RenderingContext;
-                userInfo.webRTC = !!(navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
-                userInfo.serviceWorker = 'serviceWorker' in navigator;
-                userInfo.pushNotifications = 'PushManager' in window;
-                userInfo.webAssembly = typeof WebAssembly === 'object';
-                
-                // Audio Context (for fingerprinting)
+                // Simple canvas test (widely supported)
                 try {
-                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    userInfo.audioSampleRate = audioContext.sampleRate;
-                    userInfo.audioState = audioContext.state;
-                    audioContext.close();
-                } catch (e) {
-                    userInfo.audioSampleRate = 'N/A';
-                    userInfo.audioState = 'N/A';
-                }
-                
-                // Canvas Fingerprinting
-                try {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    ctx.textBaseline = 'top';
-                    ctx.font = '14px Arial';
-                    ctx.fillText('Digital fingerprint test 🎨', 2, 2);
-                    userInfo.canvasFingerprint = canvas.toDataURL().slice(-50); // Last 50 chars
-                } catch (e) {
-                    userInfo.canvasFingerprint = 'N/A';
-                }
-                
-                // Plugins
-                const plugins = [];
-                for (let i = 0; i < navigator.plugins.length; i++) {
-                    plugins.push(navigator.plugins[i].name);
-                }
-                userInfo.plugins = plugins.length > 0 ? plugins.slice(0, 5).join(', ') + (plugins.length > 5 ? '...' : '') : 'None detected';
-                
-                // WebRTC Local IP (if available)
-                try {
-                    userInfo.localIP = await getLocalIP();
-                } catch (e) {
-                    userInfo.localIP = 'N/A';
-                }
-                
-                // Geolocation (if permitted)
-                try {
-                    userInfo.geolocation = await getCurrentPosition();
-                } catch (e) {
-                    userInfo.geolocation = 'Not permitted/available';
-                }
-                
-                // Battery Info (if available)
-                if ('getBattery' in navigator) {
-                    try {
-                        const battery = await navigator.getBattery();
-                        userInfo.batteryLevel = `${Math.round(battery.level * 100)}%`;
-                        userInfo.batteryCharging = battery.charging;
-                    } catch (e) {
-                        userInfo.batteryLevel = 'N/A';
-                        userInfo.batteryCharging = 'N/A';
+                    var canvas = document.createElement('canvas');
+                    var ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.fillText('test', 2, 2);
+                        userInfo.canvasSupport = 'Supported';
+                    } else {
+                        userInfo.canvasSupport = 'Not supported';
                     }
-                } else {
-                    userInfo.batteryLevel = 'N/A';
-                    userInfo.batteryCharging = 'N/A';
+                } catch (e) {
+                    userInfo.canvasSupport = 'Error';
                 }
                 
-                // Permissions
-                if ('permissions' in navigator) {
-                    try {
-                        const permissions = ['camera', 'microphone', 'geolocation', 'notifications'];
-                        const permissionStates = {};
-                        for (const permission of permissions) {
-                            try {
-                                const result = await navigator.permissions.query({name: permission});
-                                permissionStates[permission] = result.state;
-                            } catch (e) {
-                                permissionStates[permission] = 'unknown';
-                            }
-                        }
-                        userInfo.permissions = JSON.stringify(permissionStates);
-                    } catch (e) {
-                        userInfo.permissions = 'N/A';
-                    }
-                } else {
-                    userInfo.permissions = 'N/A';
+                // Check for basic APIs
+                userInfo.geolocationAPI = navigator.geolocation ? 'Available' : 'Not available';
+                userInfo.webGLSupport = window.WebGLRenderingContext ? 'Supported' : 'Not supported';
+                
+                // Simple plugin check
+                var pluginCount = 0;
+                try {
+                    pluginCount = navigator.plugins ? navigator.plugins.length : 0;
+                } catch (e) {
+                    pluginCount = 'Error';
                 }
+                userInfo.pluginCount = pluginCount;
+                
+                // Languages (if supported)
+                if (navigator.languages && navigator.languages.length > 0) {
+                    userInfo.languages = navigator.languages.slice(0, 3).join(', ');
+                } else {
+                    userInfo.languages = userInfo.language;
+                }
+                
+                // Do Not Track
+                userInfo.doNotTrack = navigator.doNotTrack || 'Not set';
+                
+                // Java enabled (legacy but still sometimes available)
+                userInfo.javaEnabled = navigator.javaEnabled ? navigator.javaEnabled() : 'N/A';
                 
             } catch (error) {
-                console.error('Error collecting user data:', error);
+                console.log('Error collecting user data:', error);
+                userInfo.error = 'Error collecting data: ' + error.message;
             }
             
             return userInfo;
         }
 
-        function getLocalIP() {
-            return new Promise((resolve, reject) => {
-                const rtc = new RTCPeerConnection({iceServers: []});
-                rtc.createDataChannel('');
-                rtc.createOffer().then(offer => rtc.setLocalDescription(offer));
-                rtc.onicecandidate = function(ice) {
-                    if (ice && ice.candidate && ice.candidate.candidate) {
-                        const candidate = ice.candidate.candidate;
-                        const ip = candidate.split(' ')[4];
-                        if (ip && ip !== '0.0.0.0') {
-                            rtc.close();
-                            resolve(ip);
-                        }
-                    }
-                };
-                setTimeout(() => {
-                    rtc.close();
-                    reject('Timeout');
-                }, 3000);
-            });
-        }
-
-        function getCurrentPosition() {
-            return new Promise((resolve, reject) => {
-                if (!navigator.geolocation) {
-                    reject('Geolocation not supported');
-                    return;
-                }
-                
-                navigator.geolocation.getCurrentPosition(
-                    position => {
-                        resolve(`${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`);
-                    },
-                    error => {
-                        reject(`Error: ${error.message}`);
-                    },
-                    { timeout: 5000 }
-                );
-            });
-        }
-
         function displayUserInfo(userInfo) {
-            const content = document.getElementById('userInfoContent');
+            var content = document.getElementById('userInfoContent');
+            if (!content) return;
             
-            const sections = [
+            var sections = [
                 {
-                    title: '🌐 BROWSER & SYSTEM',
+                    title: 'BROWSER INFO',
                     items: [
                         ['User Agent', userInfo.userAgent],
                         ['Platform', userInfo.platform],
                         ['Language', userInfo.language],
                         ['All Languages', userInfo.languages],
-                        ['Cookies Enabled', userInfo.cookieEnabled],
+                        ['Cookies', userInfo.cookies],
                         ['Online Status', userInfo.onLine],
                         ['Do Not Track', userInfo.doNotTrack]
                     ]
                 },
                 {
-                    title: '📺 DISPLAY & SCREEN',
+                    title: 'DISPLAY INFO',
                     items: [
-                        ['Screen Resolution', `${userInfo.screenWidth} × ${userInfo.screenHeight}`],
-                        ['Available Screen', `${userInfo.screenAvailWidth} × ${userInfo.screenAvailHeight}`],
-                        ['Window Size', `${userInfo.windowWidth} × ${userInfo.windowHeight}`],
-                        ['Outer Window', `${userInfo.windowOuterWidth} × ${userInfo.windowOuterHeight}`],
+                        ['Screen Size', userInfo.screenWidth + ' x ' + userInfo.screenHeight],
+                        ['Window Size', userInfo.windowWidth + ' x ' + userInfo.windowHeight],
                         ['Pixel Ratio', userInfo.devicePixelRatio],
-                        ['Color Depth', `${userInfo.screenColorDepth} bits`],
-                        ['Pixel Depth', `${userInfo.screenPixelDepth} bits`]
+                        ['Color Depth', userInfo.screenColorDepth + ' bits']
                     ]
                 },
                 {
-                    title: '🕐 TIME & LOCATION',
+                    title: 'SYSTEM INFO',
                     items: [
                         ['Timezone', userInfo.timezone],
-                        ['UTC Offset', `${userInfo.timezoneOffset} minutes`],
+                        ['UTC Offset', userInfo.timezoneOffset],
                         ['Current Time', userInfo.currentTime],
-                        ['Geolocation', userInfo.geolocation],
-                        ['Local IP', userInfo.localIP]
-                    ]
-                },
-                {
-                    title: '⚡ HARDWARE',
-                    items: [
                         ['CPU Cores', userInfo.hardwareConcurrency],
-                        ['Device Memory', userInfo.deviceMemory],
-                        ['Max Touch Points', userInfo.maxTouchPoints],
-                        ['Battery Level', userInfo.batteryLevel],
-                        ['Battery Charging', userInfo.batteryCharging],
-                        ['Audio Sample Rate', userInfo.audioSampleRate]
+                        ['Touch Points', userInfo.maxTouchPoints]
                     ]
                 },
                 {
-                    title: '📡 NETWORK',
-                    items: [
-                        ['Connection Type', userInfo.connectionType],
-                        ['Connection Speed', userInfo.connectionSpeed],
-                        ['Round Trip Time', userInfo.connectionRtt],
-                        ['Save Data Mode', userInfo.saveData]
-                    ]
-                },
-                {
-                    title: '🔧 CAPABILITIES',
+                    title: 'CAPABILITIES',
                     items: [
                         ['Local Storage', userInfo.localStorage],
-                        ['Session Storage', userInfo.sessionStorage],
-                        ['IndexedDB', userInfo.indexedDB],
-                        ['WebGL', userInfo.webGL],
-                        ['WebGL2', userInfo.webGL2],
-                        ['WebRTC', userInfo.webRTC],
-                        ['Service Worker', userInfo.serviceWorker],
-                        ['Push Notifications', userInfo.pushNotifications],
-                        ['WebAssembly', userInfo.webAssembly]
-                    ]
-                },
-                {
-                    title: '🔍 FINGERPRINTING',
-                    items: [
-                        ['Canvas Fingerprint', userInfo.canvasFingerprint],
-                        ['Audio State', userInfo.audioState],
-                        ['Plugins', userInfo.plugins],
-                        ['Permissions', userInfo.permissions]
+                        ['Canvas Support', userInfo.canvasSupport],
+                        ['WebGL Support', userInfo.webGLSupport],
+                        ['Geolocation API', userInfo.geolocationAPI],
+                        ['Plugin Count', userInfo.pluginCount],
+                        ['Java Enabled', userInfo.javaEnabled]
                     ]
                 }
             ];
             
-            let html = '';
-            sections.forEach(section => {
-                html += `<div class="info-section">
-                    <div class="info-item" style="color: #ff6b6b; font-weight: bold; margin-bottom: 5px;">${section.title}</div>`;
-                
-                section.items.forEach(([label, value]) => {
-                    html += `<div class="info-item">
-                        <span class="info-label">${label}:</span>
-                        <span class="info-value">${value}</span>
-                    </div>`;
+            if (userInfo.error) {
+                sections.unshift({
+                    title: 'ERROR',
+                    items: [['Message', userInfo.error]]
                 });
+            }
+            
+            var html = '';
+            for (var i = 0; i < sections.length; i++) {
+                var section = sections[i];
+                html += '<div class="info-section">';
+                html += '<div class="info-item" style="color: #ff6b6b; font-weight: bold; margin-bottom: 5px;">' + section.title + '</div>';
+                
+                for (var j = 0; j < section.items.length; j++) {
+                    var item = section.items[j];
+                    var label = item[0];
+                    var value = item[1];
+                    html += '<div class="info-item">';
+                    html += '<span class="info-label">' + label + ':</span> ';
+                    html += '<span class="info-value">' + value + '</span>';
+                    html += '</div>';
+                }
                 
                 html += '</div>';
-            });
+            }
             
             content.innerHTML = html;
         }
 
         // Initialize when page loads
         window.addEventListener('load', function() {
-            const canvas = document.getElementById('particleCanvas');
-            const container = document.querySelector('.container');
+            var canvas = document.getElementById('particleCanvas');
+            var container = document.querySelector('.container');
             
             // Set canvas size based on container
-            const containerRect = container.getBoundingClientRect();
+            var containerRect = container.getBoundingClientRect();
             canvas.width = containerRect.width;
             canvas.height = containerRect.height;
             
             // Create particle system
             new ParticleSystem(canvas);
             
-            // Collect and display user information
-            collectUserData().then(userInfo => {
+            // Collect and display user information (synchronous, compatible version)
+            try {
+                var userInfo = collectUserData();
                 displayUserInfo(userInfo);
-            }).catch(error => {
-                console.error('Error displaying user info:', error);
-                document.getElementById('userInfoContent').innerHTML = 
-                    '<div class="info-item"><span class="info-value">Error collecting data</span></div>';
-            });
+            } catch (error) {
+                console.log('Error displaying user info:', error);
+                var content = document.getElementById('userInfoContent');
+                if (content) {
+                    content.innerHTML = '<div class="info-item"><span class="info-value">Error loading data</span></div>';
+                }
+            }
             
             // Fade in the main content and fade out the preloader
             document.body.classList.add('loaded');
-            const preloader = document.querySelector('.preloader');
-            preloader.classList.add('hidden');
-            
-            // Remove preloader from DOM after transition completes
-            setTimeout(() => {
-                preloader.remove();
-            }, 500);
+            var preloader = document.querySelector('.preloader');
+            if (preloader) {
+                preloader.classList.add('hidden');
+                
+                // Remove preloader from DOM after transition completes
+                setTimeout(function() {
+                    if (preloader.parentNode) {
+                        preloader.parentNode.removeChild(preloader);
+                    }
+                }, 500);
+            }
         });
 
         // Handle resize
         window.addEventListener('resize', function() {
-            const canvas = document.getElementById('particleCanvas');
-            const container = document.querySelector('.container');
-            const containerRect = container.getBoundingClientRect();
-            canvas.width = containerRect.width;
-            canvas.height = containerRect.height;
+            var canvas = document.getElementById('particleCanvas');
+            var container = document.querySelector('.container');
+            if (canvas && container) {
+                var containerRect = container.getBoundingClientRect();
+                canvas.width = containerRect.width;
+                canvas.height = containerRect.height;
+            }
         });
     </script>
 </body>
