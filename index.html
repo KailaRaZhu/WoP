@@ -155,11 +155,83 @@
             color: #ffe66d;
         }
 
+        /* User Info Panel */
+        .user-info-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #00ff00;
+            max-width: 350px;
+            max-height: 80vh;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .panel-header {
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+            padding-bottom: 5px;
+        }
+
+        .panel-title {
+            color: #ff6b6b;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .info-section {
+            margin: 8px 0;
+            border-left: 2px solid #4ecdc4;
+            padding-left: 8px;
+        }
+
+        .info-label {
+            color: #ffe66d;
+            font-weight: bold;
+            display: inline-block;
+            min-width: 120px;
+        }
+
+        .info-value {
+            color: #00ff00;
+            word-break: break-all;
+        }
+
+        .info-item {
+            margin: 3px 0;
+            line-height: 1.4;
+        }
+
+        .warning {
+            color: #ff6b6b;
+            font-style: italic;
+            margin-top: 10px;
+            padding: 5px;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 3px;
+            font-size: 10px;
+        }
+
         /* Responsive design */
         @media (max-width: 600px) {
             .container {
                 width: 300px;
                 height: 300px;
+            }
+            
+            .user-info-panel {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+                font-size: 10px;
             }
         }
     </style>
@@ -171,6 +243,21 @@
     <div class="container">
         <canvas id="particleCanvas" width="400" height="400"></canvas>
         <div class="center-dot"></div>
+    </div>
+    
+    <!-- User Information Panel -->
+    <div class="user-info-panel" id="userInfoPanel">
+        <div class="panel-header">
+            <span class="panel-title">📊 YOUR DIGITAL FINGERPRINT</span>
+        </div>
+        <div id="userInfoContent">
+            <div class="info-section">
+                <div class="info-item"><span class="info-label">Status:</span><span class="info-value">Collecting data...</span></div>
+            </div>
+        </div>
+        <div class="warning">
+            ⚠️ This data is what websites can collect about you automatically
+        </div>
     </div>
     
     <script>
@@ -185,6 +272,11 @@
                 
                 // Time tracking for 6x speed
                 this.startTime = Date.now();
+                
+                // Wind and environmental effects
+                this.wind = { x: 0, y: 0, strength: 0 };
+                this.turbulence = 0;
+                this.globalForce = { x: 0, y: 0 };
                 
                 this.createParticles();
                 this.animate();
@@ -207,7 +299,16 @@
                         glowSize: 8 + Math.random() * 4,
                         orbitSpeed: 0.001 + Math.random() * 0.002,
                         pulsePhase: Math.random() * Math.PI * 2,
-                        trail: []
+                        trail: [],
+                        // New random motion properties
+                        velocity: { x: 0, y: 0 },
+                        acceleration: { x: 0, y: 0 },
+                        mass: 0.8 + Math.random() * 0.4,
+                        windResistance: 0.3 + Math.random() * 0.4,
+                        chaosLevel: 0.5 + Math.random() * 0.5,
+                        driftPhase: Math.random() * Math.PI * 2,
+                        restoreForce: 0.02 + Math.random() * 0.01,
+                        maxDrift: 15 + Math.random() * 10
                     });
                 }
                 
@@ -227,7 +328,16 @@
                         glowSize: 10 + Math.random() * 5,
                         orbitSpeed: 0.0008 + Math.random() * 0.0015,
                         pulsePhase: Math.random() * Math.PI * 2,
-                        trail: []
+                        trail: [],
+                        // New random motion properties
+                        velocity: { x: 0, y: 0 },
+                        acceleration: { x: 0, y: 0 },
+                        mass: 1.0 + Math.random() * 0.5,
+                        windResistance: 0.4 + Math.random() * 0.3,
+                        chaosLevel: 0.3 + Math.random() * 0.4,
+                        driftPhase: Math.random() * Math.PI * 2,
+                        restoreForce: 0.025 + Math.random() * 0.01,
+                        maxDrift: 12 + Math.random() * 8
                     });
                 }
                 
@@ -247,22 +357,49 @@
                         glowSize: 12 + Math.random() * 6,
                         orbitSpeed: 0.0005 + Math.random() * 0.001,
                         pulsePhase: Math.random() * Math.PI * 2,
-                        trail: []
+                        trail: [],
+                        // New random motion properties
+                        velocity: { x: 0, y: 0 },
+                        acceleration: { x: 0, y: 0 },
+                        mass: 1.2 + Math.random() * 0.6,
+                        windResistance: 0.5 + Math.random() * 0.2,
+                        chaosLevel: 0.2 + Math.random() * 0.3,
+                        driftPhase: Math.random() * Math.PI * 2,
+                        restoreForce: 0.03 + Math.random() * 0.01,
+                        maxDrift: 8 + Math.random() * 6
                     });
                 }
             }
             
+            updateEnvironment() {
+                // Dynamic wind system
+                const windTime = this.time * 0.01;
+                this.wind.x = Math.sin(windTime * 0.7) * Math.cos(windTime * 0.3) * 0.5;
+                this.wind.y = Math.cos(windTime * 0.5) * Math.sin(windTime * 0.4) * 0.3;
+                this.wind.strength = (Math.sin(windTime * 0.2) + 1) * 0.5;
+                
+                // Turbulence waves
+                this.turbulence = Math.sin(windTime * 1.3) * Math.cos(windTime * 0.8) * 0.3;
+                
+                // Global forces (magnetic fields, gravitational waves)
+                this.globalForce.x = Math.sin(windTime * 0.15) * 0.2;
+                this.globalForce.y = Math.cos(windTime * 0.11) * 0.15;
+            }
+            
             updateParticles() {
                 const now = Date.now();
-                const elapsed = (now - this.startTime) / 1000; // seconds elapsed
+                const elapsed = (now - this.startTime) / 1000;
+                
+                // Update environmental forces
+                this.updateEnvironment();
                 
                 // Calculate 6x faster time
                 const fastTime = elapsed * 6;
                 
                 // Calculate rotations (in radians)
-                const secondsRotation = (fastTime * Math.PI * 2) / 60; // Full rotation every 60 fast-seconds (10 real seconds)
-                const minutesRotation = (fastTime * Math.PI * 2) / 3600; // Full rotation every 3600 fast-seconds (600 real seconds)
-                const hoursRotation = (fastTime * Math.PI * 2) / 43200; // Full rotation every 43200 fast-seconds (7200 real seconds)
+                const secondsRotation = (fastTime * Math.PI * 2) / 60;
+                const minutesRotation = (fastTime * Math.PI * 2) / 3600;
+                const hoursRotation = (fastTime * Math.PI * 2) / 43200;
                 
                 this.particles.forEach(particle => {
                     // Apply time-based rotation
@@ -275,24 +412,91 @@
                         timeRotation = hoursRotation;
                     }
                     
-                    // Individual particle orbital movement
-                    const orbitOffset = Math.sin(this.time * particle.orbitSpeed) * 5;
+                    // Calculate ideal position (for restoration force)
+                    const idealAngle = particle.baseAngle + timeRotation;
+                    const idealRadius = particle.baseRadius + Math.sin(this.time * particle.orbitSpeed) * 5;
+                    const idealX = this.centerX + Math.cos(idealAngle) * idealRadius;
+                    const idealY = this.centerY + Math.sin(idealAngle) * idealRadius;
                     
-                    // Calculate current position
-                    particle.currentAngle = particle.baseAngle + timeRotation;
-                    particle.currentRadius = particle.baseRadius + orbitOffset;
+                    // Current position
+                    const currentX = this.centerX + Math.cos(particle.currentAngle) * particle.currentRadius;
+                    const currentY = this.centerY + Math.sin(particle.currentAngle) * particle.currentRadius;
+                    
+                    // Reset acceleration
+                    particle.acceleration.x = 0;
+                    particle.acceleration.y = 0;
+                    
+                    // Wind forces
+                    const windEffect = this.wind.strength * particle.windResistance;
+                    particle.acceleration.x += this.wind.x * windEffect;
+                    particle.acceleration.y += this.wind.y * windEffect;
+                    
+                    // Turbulence
+                    const turbulenceAngle = particle.driftPhase + this.time * 0.02;
+                    particle.acceleration.x += Math.cos(turbulenceAngle) * this.turbulence * particle.chaosLevel;
+                    particle.acceleration.y += Math.sin(turbulenceAngle) * this.turbulence * particle.chaosLevel;
+                    
+                    // Global forces
+                    particle.acceleration.x += this.globalForce.x * (1 / particle.mass);
+                    particle.acceleration.y += this.globalForce.y * (1 / particle.mass);
+                    
+                    // Random chaos bursts
+                    if (Math.random() < 0.002 * particle.chaosLevel) {
+                        particle.acceleration.x += (Math.random() - 0.5) * 2;
+                        particle.acceleration.y += (Math.random() - 0.5) * 2;
+                    }
+                    
+                    // Restoration force (pulls particle back to ideal position)
+                    const distanceFromIdeal = Math.sqrt(
+                        (currentX - idealX) ** 2 + (currentY - idealY) ** 2
+                    );
+                    
+                    if (distanceFromIdeal > 0) {
+                        const restoreStrength = Math.min(distanceFromIdeal / particle.maxDrift, 1) * particle.restoreForce;
+                        particle.acceleration.x += (idealX - currentX) * restoreStrength;
+                        particle.acceleration.y += (idealY - currentY) * restoreStrength;
+                    }
+                    
+                    // Update velocity with damping
+                    particle.velocity.x += particle.acceleration.x;
+                    particle.velocity.y += particle.acceleration.y;
+                    particle.velocity.x *= 0.95; // Damping
+                    particle.velocity.y *= 0.95;
+                    
+                    // Limit velocity
+                    const maxVelocity = 2;
+                    const velocityMagnitude = Math.sqrt(particle.velocity.x ** 2 + particle.velocity.y ** 2);
+                    if (velocityMagnitude > maxVelocity) {
+                        particle.velocity.x = (particle.velocity.x / velocityMagnitude) * maxVelocity;
+                        particle.velocity.y = (particle.velocity.y / velocityMagnitude) * maxVelocity;
+                    }
+                    
+                    // Apply velocity to position
+                    const newX = currentX + particle.velocity.x;
+                    const newY = currentY + particle.velocity.y;
+                    
+                    // Convert back to angle/radius
+                    const deltaX = newX - this.centerX;
+                    const deltaY = newY - this.centerY;
+                    particle.currentAngle = Math.atan2(deltaY, deltaX);
+                    particle.currentRadius = Math.sqrt(deltaX ** 2 + deltaY ** 2);
                     
                     // Pulsing effect
                     const pulse = Math.sin(this.time * 0.05 + particle.pulsePhase) * 0.3 + 0.7;
-                    particle.currentOpacity = particle.opacity * pulse;
+                    const chaosPulse = Math.sin(this.time * 0.1 + particle.driftPhase) * 0.1 + 0.9;
+                    particle.currentOpacity = particle.opacity * pulse * chaosPulse;
                     
-                    // Calculate screen coordinates
+                    // Update size based on movement
+                    const movementIntensity = Math.sqrt(particle.velocity.x ** 2 + particle.velocity.y ** 2);
+                    particle.currentSize = particle.size * (1 + movementIntensity * 0.3);
+                    
+                    // Calculate screen coordinates for trail
                     const x = this.centerX + Math.cos(particle.currentAngle) * particle.currentRadius;
                     const y = this.centerY + Math.sin(particle.currentAngle) * particle.currentRadius;
                     
                     // Update trail
                     particle.trail.unshift({x, y, opacity: particle.currentOpacity});
-                    if (particle.trail.length > 5) {
+                    if (particle.trail.length > 8) { // Longer trails for more motion
                         particle.trail.pop();
                     }
                 });
@@ -309,10 +513,10 @@
                 // Draw particle trails
                 this.particles.forEach(particle => {
                     particle.trail.forEach((point, index) => {
-                        if (index === 0) return; // Skip current position
+                        if (index === 0) return;
                         
-                        const trailOpacity = (particle.currentOpacity * (1 - index / particle.trail.length)) * 0.3;
-                        const trailSize = particle.size * (1 - index / particle.trail.length) * 0.5;
+                        const trailOpacity = (particle.currentOpacity * (1 - index / particle.trail.length)) * 0.4;
+                        const trailSize = (particle.currentSize || particle.size) * (1 - index / particle.trail.length) * 0.6;
                         
                         this.ctx.globalAlpha = trailOpacity;
                         this.ctx.fillStyle = particle.color;
@@ -327,28 +531,31 @@
                     const x = this.centerX + Math.cos(particle.currentAngle) * particle.currentRadius;
                     const y = this.centerY + Math.sin(particle.currentAngle) * particle.currentRadius;
                     
+                    const currentSize = particle.currentSize || particle.size;
+                    const glowSize = particle.glowSize * (1 + (currentSize - particle.size) * 0.5);
+                    
                     // Outer glow
-                    this.ctx.globalAlpha = particle.currentOpacity * 0.3;
-                    const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, particle.glowSize);
+                    this.ctx.globalAlpha = particle.currentOpacity * 0.4;
+                    const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, glowSize);
                     gradient.addColorStop(0, particle.color);
                     gradient.addColorStop(1, 'transparent');
                     this.ctx.fillStyle = gradient;
                     this.ctx.beginPath();
-                    this.ctx.arc(x, y, particle.glowSize, 0, Math.PI * 2);
+                    this.ctx.arc(x, y, glowSize, 0, Math.PI * 2);
                     this.ctx.fill();
                     
                     // Core particle
                     this.ctx.globalAlpha = particle.currentOpacity;
                     this.ctx.fillStyle = particle.color;
                     this.ctx.beginPath();
-                    this.ctx.arc(x, y, particle.size, 0, Math.PI * 2);
+                    this.ctx.arc(x, y, currentSize, 0, Math.PI * 2);
                     this.ctx.fill();
                     
                     // Bright center
-                    this.ctx.globalAlpha = particle.currentOpacity * 0.8;
+                    this.ctx.globalAlpha = particle.currentOpacity * 0.9;
                     this.ctx.fillStyle = '#ffffff';
                     this.ctx.beginPath();
-                    this.ctx.arc(x, y, particle.size * 0.3, 0, Math.PI * 2);
+                    this.ctx.arc(x, y, currentSize * 0.4, 0, Math.PI * 2);
                     this.ctx.fill();
                 });
                 
@@ -356,7 +563,7 @@
             }
             
             drawConnections() {
-                const maxDistance = 40;
+                const maxDistance = 50; // Increased for more dynamic connections
                 
                 for (let i = 0; i < this.particles.length; i++) {
                     const p1 = this.particles[i];
@@ -375,10 +582,10 @@
                         const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
                         
                         if (distance < maxDistance) {
-                            const opacity = (1 - distance / maxDistance) * 0.2 * p1.currentOpacity;
+                            const opacity = (1 - distance / maxDistance) * 0.25 * p1.currentOpacity;
                             this.ctx.globalAlpha = opacity;
                             this.ctx.strokeStyle = p1.color;
-                            this.ctx.lineWidth = 0.5;
+                            this.ctx.lineWidth = 0.8;
                             this.ctx.beginPath();
                             this.ctx.moveTo(x1, y1);
                             this.ctx.lineTo(x2, y2);
@@ -395,6 +602,299 @@
             }
         }
 
+        // User Information Collection System
+        async function collectUserData() {
+            const userInfo = {};
+            
+            try {
+                // Basic Browser Info
+                userInfo.userAgent = navigator.userAgent;
+                userInfo.platform = navigator.platform;
+                userInfo.language = navigator.language;
+                userInfo.languages = navigator.languages ? navigator.languages.join(', ') : 'N/A';
+                userInfo.cookieEnabled = navigator.cookieEnabled;
+                userInfo.onLine = navigator.onLine;
+                userInfo.doNotTrack = navigator.doNotTrack || 'Not set';
+                
+                // Screen & Display Info
+                userInfo.screenWidth = screen.width;
+                userInfo.screenHeight = screen.height;
+                userInfo.screenColorDepth = screen.colorDepth;
+                userInfo.screenPixelDepth = screen.pixelDepth;
+                userInfo.screenAvailWidth = screen.availWidth;
+                userInfo.screenAvailHeight = screen.availHeight;
+                userInfo.devicePixelRatio = window.devicePixelRatio;
+                
+                // Window Info
+                userInfo.windowWidth = window.innerWidth;
+                userInfo.windowHeight = window.innerHeight;
+                userInfo.windowOuterWidth = window.outerWidth;
+                userInfo.windowOuterHeight = window.outerHeight;
+                
+                // Timezone & Date
+                userInfo.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                userInfo.timezoneOffset = new Date().getTimezoneOffset();
+                userInfo.currentTime = new Date().toISOString();
+                
+                // Hardware Info
+                userInfo.hardwareConcurrency = navigator.hardwareConcurrency || 'N/A';
+                userInfo.maxTouchPoints = navigator.maxTouchPoints || 'N/A';
+                userInfo.deviceMemory = navigator.deviceMemory ? `${navigator.deviceMemory} GB` : 'N/A';
+                
+                // Connection Info
+                if (navigator.connection) {
+                    const conn = navigator.connection;
+                    userInfo.connectionType = conn.effectiveType || 'N/A';
+                    userInfo.connectionSpeed = conn.downlink ? `${conn.downlink} Mbps` : 'N/A';
+                    userInfo.connectionRtt = conn.rtt ? `${conn.rtt} ms` : 'N/A';
+                    userInfo.saveData = conn.saveData || false;
+                } else {
+                    userInfo.connectionType = 'N/A';
+                    userInfo.connectionSpeed = 'N/A';
+                    userInfo.connectionRtt = 'N/A';
+                    userInfo.saveData = 'N/A';
+                }
+                
+                // Browser Features
+                userInfo.localStorage = typeof(Storage) !== "undefined";
+                userInfo.sessionStorage = typeof(Storage) !== "undefined";
+                userInfo.indexedDB = 'indexedDB' in window;
+                userInfo.webGL = !!window.WebGLRenderingContext;
+                userInfo.webGL2 = !!window.WebGL2RenderingContext;
+                userInfo.webRTC = !!(navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
+                userInfo.serviceWorker = 'serviceWorker' in navigator;
+                userInfo.pushNotifications = 'PushManager' in window;
+                userInfo.webAssembly = typeof WebAssembly === 'object';
+                
+                // Audio Context (for fingerprinting)
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    userInfo.audioSampleRate = audioContext.sampleRate;
+                    userInfo.audioState = audioContext.state;
+                    audioContext.close();
+                } catch (e) {
+                    userInfo.audioSampleRate = 'N/A';
+                    userInfo.audioState = 'N/A';
+                }
+                
+                // Canvas Fingerprinting
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    ctx.textBaseline = 'top';
+                    ctx.font = '14px Arial';
+                    ctx.fillText('Digital fingerprint test 🎨', 2, 2);
+                    userInfo.canvasFingerprint = canvas.toDataURL().slice(-50); // Last 50 chars
+                } catch (e) {
+                    userInfo.canvasFingerprint = 'N/A';
+                }
+                
+                // Plugins
+                const plugins = [];
+                for (let i = 0; i < navigator.plugins.length; i++) {
+                    plugins.push(navigator.plugins[i].name);
+                }
+                userInfo.plugins = plugins.length > 0 ? plugins.slice(0, 5).join(', ') + (plugins.length > 5 ? '...' : '') : 'None detected';
+                
+                // WebRTC Local IP (if available)
+                try {
+                    userInfo.localIP = await getLocalIP();
+                } catch (e) {
+                    userInfo.localIP = 'N/A';
+                }
+                
+                // Geolocation (if permitted)
+                try {
+                    userInfo.geolocation = await getCurrentPosition();
+                } catch (e) {
+                    userInfo.geolocation = 'Not permitted/available';
+                }
+                
+                // Battery Info (if available)
+                if ('getBattery' in navigator) {
+                    try {
+                        const battery = await navigator.getBattery();
+                        userInfo.batteryLevel = `${Math.round(battery.level * 100)}%`;
+                        userInfo.batteryCharging = battery.charging;
+                    } catch (e) {
+                        userInfo.batteryLevel = 'N/A';
+                        userInfo.batteryCharging = 'N/A';
+                    }
+                } else {
+                    userInfo.batteryLevel = 'N/A';
+                    userInfo.batteryCharging = 'N/A';
+                }
+                
+                // Permissions
+                if ('permissions' in navigator) {
+                    try {
+                        const permissions = ['camera', 'microphone', 'geolocation', 'notifications'];
+                        const permissionStates = {};
+                        for (const permission of permissions) {
+                            try {
+                                const result = await navigator.permissions.query({name: permission});
+                                permissionStates[permission] = result.state;
+                            } catch (e) {
+                                permissionStates[permission] = 'unknown';
+                            }
+                        }
+                        userInfo.permissions = JSON.stringify(permissionStates);
+                    } catch (e) {
+                        userInfo.permissions = 'N/A';
+                    }
+                } else {
+                    userInfo.permissions = 'N/A';
+                }
+                
+            } catch (error) {
+                console.error('Error collecting user data:', error);
+            }
+            
+            return userInfo;
+        }
+
+        function getLocalIP() {
+            return new Promise((resolve, reject) => {
+                const rtc = new RTCPeerConnection({iceServers: []});
+                rtc.createDataChannel('');
+                rtc.createOffer().then(offer => rtc.setLocalDescription(offer));
+                rtc.onicecandidate = function(ice) {
+                    if (ice && ice.candidate && ice.candidate.candidate) {
+                        const candidate = ice.candidate.candidate;
+                        const ip = candidate.split(' ')[4];
+                        if (ip && ip !== '0.0.0.0') {
+                            rtc.close();
+                            resolve(ip);
+                        }
+                    }
+                };
+                setTimeout(() => {
+                    rtc.close();
+                    reject('Timeout');
+                }, 3000);
+            });
+        }
+
+        function getCurrentPosition() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject('Geolocation not supported');
+                    return;
+                }
+                
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        resolve(`${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`);
+                    },
+                    error => {
+                        reject(`Error: ${error.message}`);
+                    },
+                    { timeout: 5000 }
+                );
+            });
+        }
+
+        function displayUserInfo(userInfo) {
+            const content = document.getElementById('userInfoContent');
+            
+            const sections = [
+                {
+                    title: '🌐 BROWSER & SYSTEM',
+                    items: [
+                        ['User Agent', userInfo.userAgent],
+                        ['Platform', userInfo.platform],
+                        ['Language', userInfo.language],
+                        ['All Languages', userInfo.languages],
+                        ['Cookies Enabled', userInfo.cookieEnabled],
+                        ['Online Status', userInfo.onLine],
+                        ['Do Not Track', userInfo.doNotTrack]
+                    ]
+                },
+                {
+                    title: '📺 DISPLAY & SCREEN',
+                    items: [
+                        ['Screen Resolution', `${userInfo.screenWidth} × ${userInfo.screenHeight}`],
+                        ['Available Screen', `${userInfo.screenAvailWidth} × ${userInfo.screenAvailHeight}`],
+                        ['Window Size', `${userInfo.windowWidth} × ${userInfo.windowHeight}`],
+                        ['Outer Window', `${userInfo.windowOuterWidth} × ${userInfo.windowOuterHeight}`],
+                        ['Pixel Ratio', userInfo.devicePixelRatio],
+                        ['Color Depth', `${userInfo.screenColorDepth} bits`],
+                        ['Pixel Depth', `${userInfo.screenPixelDepth} bits`]
+                    ]
+                },
+                {
+                    title: '🕐 TIME & LOCATION',
+                    items: [
+                        ['Timezone', userInfo.timezone],
+                        ['UTC Offset', `${userInfo.timezoneOffset} minutes`],
+                        ['Current Time', userInfo.currentTime],
+                        ['Geolocation', userInfo.geolocation],
+                        ['Local IP', userInfo.localIP]
+                    ]
+                },
+                {
+                    title: '⚡ HARDWARE',
+                    items: [
+                        ['CPU Cores', userInfo.hardwareConcurrency],
+                        ['Device Memory', userInfo.deviceMemory],
+                        ['Max Touch Points', userInfo.maxTouchPoints],
+                        ['Battery Level', userInfo.batteryLevel],
+                        ['Battery Charging', userInfo.batteryCharging],
+                        ['Audio Sample Rate', userInfo.audioSampleRate]
+                    ]
+                },
+                {
+                    title: '📡 NETWORK',
+                    items: [
+                        ['Connection Type', userInfo.connectionType],
+                        ['Connection Speed', userInfo.connectionSpeed],
+                        ['Round Trip Time', userInfo.connectionRtt],
+                        ['Save Data Mode', userInfo.saveData]
+                    ]
+                },
+                {
+                    title: '🔧 CAPABILITIES',
+                    items: [
+                        ['Local Storage', userInfo.localStorage],
+                        ['Session Storage', userInfo.sessionStorage],
+                        ['IndexedDB', userInfo.indexedDB],
+                        ['WebGL', userInfo.webGL],
+                        ['WebGL2', userInfo.webGL2],
+                        ['WebRTC', userInfo.webRTC],
+                        ['Service Worker', userInfo.serviceWorker],
+                        ['Push Notifications', userInfo.pushNotifications],
+                        ['WebAssembly', userInfo.webAssembly]
+                    ]
+                },
+                {
+                    title: '🔍 FINGERPRINTING',
+                    items: [
+                        ['Canvas Fingerprint', userInfo.canvasFingerprint],
+                        ['Audio State', userInfo.audioState],
+                        ['Plugins', userInfo.plugins],
+                        ['Permissions', userInfo.permissions]
+                    ]
+                }
+            ];
+            
+            let html = '';
+            sections.forEach(section => {
+                html += `<div class="info-section">
+                    <div class="info-item" style="color: #ff6b6b; font-weight: bold; margin-bottom: 5px;">${section.title}</div>`;
+                
+                section.items.forEach(([label, value]) => {
+                    html += `<div class="info-item">
+                        <span class="info-label">${label}:</span>
+                        <span class="info-value">${value}</span>
+                    </div>`;
+                });
+                
+                html += '</div>';
+            });
+            
+            content.innerHTML = html;
+        }
+
         // Initialize when page loads
         window.addEventListener('load', function() {
             const canvas = document.getElementById('particleCanvas');
@@ -407,6 +907,15 @@
             
             // Create particle system
             new ParticleSystem(canvas);
+            
+            // Collect and display user information
+            collectUserData().then(userInfo => {
+                displayUserInfo(userInfo);
+            }).catch(error => {
+                console.error('Error displaying user info:', error);
+                document.getElementById('userInfoContent').innerHTML = 
+                    '<div class="info-item"><span class="info-value">Error collecting data</span></div>';
+            });
             
             // Fade in the main content and fade out the preloader
             document.body.classList.add('loaded');
