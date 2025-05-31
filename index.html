@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clock - Rotating Concentric Rings</title>
+    <title>Clock - Particle Galaxy</title>
     <style>
         * {
             margin: 0;
@@ -74,71 +74,41 @@
             align-items: center;
         }
 
-        .ring {
-            position: absolute;
+        #particleCanvas {
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
-            opacity: 0.7;
-        }
-
-        .outer-ring {
-            width: 350px;
-            height: 350px;
-            background-color: rgba(255, 107, 107, 0.3);
-            border: 2px solid #ff6b6b;
-            animation: rotate-seconds 10s linear infinite; /* 6x faster: 60s / 6 = 10s (smooth) */
-        }
-
-        .middle-ring {
-            width: 250px;
-            height: 250px;
-            background-color: rgba(78, 205, 196, 0.3);
-            border: 2px solid #4ecdc4;
-            animation: rotate-minutes 600s steps(60, end) infinite; /* 6x faster: discrete steps, 60 steps per rotation */
-        }
-
-        .inner-ring {
-            width: 150px;
-            height: 150px;
-            background-color: rgba(255, 230, 109, 0.3);
-            border: 2px solid #ffe66d;
-            animation: rotate-hours 7200s steps(12, end) infinite; /* 6x faster: discrete steps, 12 steps per rotation */
-        }
-
-        .pip {
-            position: absolute;
-            box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Hand indicator pips */
-        .outer-indicator-pip {
-            width: 3px;
-            height: 18px;
-            background-color: white;
-            border: 1px solid #ff6b6b;
-        }
-
-        .middle-indicator-pip {
-            width: 3px;
-            height: 16px;
-            background-color: white;
-            border: 1px solid #4ecdc4;
-        }
-
-        .inner-indicator-pip {
-            width: 3px;
-            height: 14px;
-            background-color: white;
-            border: 1px solid #ffe66d;
         }
 
         .center-dot {
             position: absolute;
             width: 20px;
             height: 20px;
-            background: white;
+            background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.3) 100%);
             border-radius: 50%;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            box-shadow: 
+                0 0 20px rgba(255, 255, 255, 0.8),
+                0 0 40px rgba(255, 255, 255, 0.4),
+                0 0 60px rgba(255, 255, 255, 0.2);
             z-index: 10;
+            animation: centerPulse 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes centerPulse {
+            0% { 
+                transform: scale(1);
+                box-shadow: 
+                    0 0 20px rgba(255, 255, 255, 0.8),
+                    0 0 40px rgba(255, 255, 255, 0.4),
+                    0 0 60px rgba(255, 255, 255, 0.2);
+            }
+            100% { 
+                transform: scale(1.2);
+                box-shadow: 
+                    0 0 25px rgba(255, 255, 255, 1),
+                    0 0 50px rgba(255, 255, 255, 0.6),
+                    0 0 80px rgba(255, 255, 255, 0.3);
+            }
         }
 
         .info {
@@ -156,6 +126,7 @@
             margin-bottom: 15px;
             font-size: 24px;
             font-weight: 300;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
         }
 
         .ring-info {
@@ -168,38 +139,20 @@
             height: 12px;
             border-radius: 50%;
             margin-right: 8px;
+            box-shadow: 0 0 10px currentColor;
         }
 
-        .outer-indicator { background-color: #ff6b6b; }
-        .middle-indicator { background-color: #4ecdc4; }
-        .inner-indicator { background-color: #ffe66d; }
-
-        @keyframes rotate-seconds {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        .outer-indicator { 
+            background-color: #ff6b6b; 
+            color: #ff6b6b;
         }
-
-        @keyframes rotate-minutes {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        .middle-indicator { 
+            background-color: #4ecdc4; 
+            color: #4ecdc4;
         }
-
-        @keyframes rotate-hours {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        /* Add subtle glow effects */
-        .outer-ring {
-            box-shadow: 0 0 30px rgba(255, 107, 107, 0.3);
-        }
-
-        .middle-ring {
-            box-shadow: 0 0 25px rgba(78, 205, 196, 0.3);
-        }
-
-        .inner-ring {
-            box-shadow: 0 0 20px rgba(255, 230, 109, 0.3);
+        .inner-indicator { 
+            background-color: #ffe66d; 
+            color: #ffe66d;
         }
 
         /* Responsive design */
@@ -207,21 +160,6 @@
             .container {
                 width: 300px;
                 height: 300px;
-            }
-            
-            .outer-ring {
-                width: 280px;
-                height: 280px;
-            }
-            
-            .middle-ring {
-                width: 200px;
-                height: 200px;
-            }
-            
-            .inner-ring {
-                width: 120px;
-                height: 120px;
             }
         }
     </style>
@@ -231,97 +169,244 @@
         <div class="preloader-ring"></div>
     </div>
     <div class="container">
-        <div class="ring outer-ring" id="outer-ring"></div>
-        <div class="ring middle-ring" id="middle-ring"></div>
-        <div class="ring inner-ring" id="inner-ring"></div>
+        <canvas id="particleCanvas" width="400" height="400"></canvas>
         <div class="center-dot"></div>
     </div>
     
     <script>
-        function createPips() {
-            // Outer ring - single hand indicator (seconds)
-            const outerRing = document.getElementById('outer-ring');
-            const outerRadius = 175; // Half of 350px
-            const outerPip = document.createElement('div');
-            outerPip.className = 'pip outer-indicator-pip';
+        class ParticleSystem {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.particles = [];
+                this.time = 0;
+                this.centerX = canvas.width / 2;
+                this.centerY = canvas.height / 2;
+                
+                // Time tracking for 6x speed
+                this.startTime = Date.now();
+                
+                this.createParticles();
+                this.animate();
+            }
             
-            // Position at 12 o'clock (0 degrees)
-            const outerX = Math.cos(-Math.PI/2) * (outerRadius - 15);
-            const outerY = Math.sin(-Math.PI/2) * (outerRadius - 15);
-            outerPip.style.left = `calc(50% + ${outerX}px - 1.5px)`; // Center the line width
-            outerPip.style.top = `calc(50% + ${outerY}px - 9px)`; // Center the line height
-            outerPip.style.transform = `rotate(0deg)`;
-            outerPip.style.transformOrigin = 'center bottom';
-            outerRing.appendChild(outerPip);
-
-            // Middle ring - single hand indicator (minutes)
-            const middleRing = document.getElementById('middle-ring');
-            const middleRadius = 125; // Half of 250px
-            const middlePip = document.createElement('div');
-            middlePip.className = 'pip middle-indicator-pip';
+            createParticles() {
+                // Outer ring particles (seconds) - Red
+                for (let i = 0; i < 60; i++) {
+                    const angle = (i / 60) * Math.PI * 2;
+                    const radius = 165;
+                    this.particles.push({
+                        type: 'seconds',
+                        baseAngle: angle,
+                        baseRadius: radius,
+                        currentAngle: angle,
+                        currentRadius: radius + Math.random() * 10 - 5,
+                        size: 2 + Math.random() * 2,
+                        opacity: 0.7 + Math.random() * 0.3,
+                        color: '#ff6b6b',
+                        glowSize: 8 + Math.random() * 4,
+                        orbitSpeed: 0.001 + Math.random() * 0.002,
+                        pulsePhase: Math.random() * Math.PI * 2,
+                        trail: []
+                    });
+                }
+                
+                // Middle ring particles (minutes) - Teal
+                for (let i = 0; i < 36; i++) {
+                    const angle = (i / 36) * Math.PI * 2;
+                    const radius = 115;
+                    this.particles.push({
+                        type: 'minutes',
+                        baseAngle: angle,
+                        baseRadius: radius,
+                        currentAngle: angle,
+                        currentRadius: radius + Math.random() * 8 - 4,
+                        size: 2.5 + Math.random() * 2,
+                        opacity: 0.8 + Math.random() * 0.2,
+                        color: '#4ecdc4',
+                        glowSize: 10 + Math.random() * 5,
+                        orbitSpeed: 0.0008 + Math.random() * 0.0015,
+                        pulsePhase: Math.random() * Math.PI * 2,
+                        trail: []
+                    });
+                }
+                
+                // Inner ring particles (hours) - Yellow
+                for (let i = 0; i < 24; i++) {
+                    const angle = (i / 24) * Math.PI * 2;
+                    const radius = 65;
+                    this.particles.push({
+                        type: 'hours',
+                        baseAngle: angle,
+                        baseRadius: radius,
+                        currentAngle: angle,
+                        currentRadius: radius + Math.random() * 6 - 3,
+                        size: 3 + Math.random() * 2,
+                        opacity: 0.9 + Math.random() * 0.1,
+                        color: '#ffe66d',
+                        glowSize: 12 + Math.random() * 6,
+                        orbitSpeed: 0.0005 + Math.random() * 0.001,
+                        pulsePhase: Math.random() * Math.PI * 2,
+                        trail: []
+                    });
+                }
+            }
             
-            // Position at 12 o'clock (0 degrees)
-            const middleX = Math.cos(-Math.PI/2) * (middleRadius - 12);
-            const middleY = Math.sin(-Math.PI/2) * (middleRadius - 12);
-            middlePip.style.left = `calc(50% + ${middleX}px - 1.5px)`; // Center the line width
-            middlePip.style.top = `calc(50% + ${middleY}px - 8px)`; // Center the line height
-            middlePip.style.transform = `rotate(0deg)`;
-            middlePip.style.transformOrigin = 'center bottom';
-            middleRing.appendChild(middlePip);
-
-            // Inner ring - single hand indicator (hours)
-            const innerRing = document.getElementById('inner-ring');
-            const innerRadius = 75; // Half of 150px
-            const innerPip = document.createElement('div');
-            innerPip.className = 'pip inner-indicator-pip';
+            updateParticles() {
+                const now = Date.now();
+                const elapsed = (now - this.startTime) / 1000; // seconds elapsed
+                
+                // Calculate 6x faster time
+                const fastTime = elapsed * 6;
+                
+                // Calculate rotations (in radians)
+                const secondsRotation = (fastTime * Math.PI * 2) / 60; // Full rotation every 60 fast-seconds (10 real seconds)
+                const minutesRotation = (fastTime * Math.PI * 2) / 3600; // Full rotation every 3600 fast-seconds (600 real seconds)
+                const hoursRotation = (fastTime * Math.PI * 2) / 43200; // Full rotation every 43200 fast-seconds (7200 real seconds)
+                
+                this.particles.forEach(particle => {
+                    // Apply time-based rotation
+                    let timeRotation = 0;
+                    if (particle.type === 'seconds') {
+                        timeRotation = secondsRotation;
+                    } else if (particle.type === 'minutes') {
+                        timeRotation = minutesRotation;
+                    } else if (particle.type === 'hours') {
+                        timeRotation = hoursRotation;
+                    }
+                    
+                    // Individual particle orbital movement
+                    const orbitOffset = Math.sin(this.time * particle.orbitSpeed) * 5;
+                    
+                    // Calculate current position
+                    particle.currentAngle = particle.baseAngle + timeRotation;
+                    particle.currentRadius = particle.baseRadius + orbitOffset;
+                    
+                    // Pulsing effect
+                    const pulse = Math.sin(this.time * 0.05 + particle.pulsePhase) * 0.3 + 0.7;
+                    particle.currentOpacity = particle.opacity * pulse;
+                    
+                    // Calculate screen coordinates
+                    const x = this.centerX + Math.cos(particle.currentAngle) * particle.currentRadius;
+                    const y = this.centerY + Math.sin(particle.currentAngle) * particle.currentRadius;
+                    
+                    // Update trail
+                    particle.trail.unshift({x, y, opacity: particle.currentOpacity});
+                    if (particle.trail.length > 5) {
+                        particle.trail.pop();
+                    }
+                });
+                
+                this.time += 1;
+            }
             
-            // Position at 12 o'clock (0 degrees)
-            const innerX = Math.cos(-Math.PI/2) * (innerRadius - 10);
-            const innerY = Math.sin(-Math.PI/2) * (innerRadius - 10);
-            innerPip.style.left = `calc(50% + ${innerX}px - 1.5px)`; // Center the line width
-            innerPip.style.top = `calc(50% + ${innerY}px - 7px)`; // Center the line height
-            innerPip.style.transform = `rotate(0deg)`;
-            innerPip.style.transformOrigin = 'center bottom';
-            innerRing.appendChild(innerPip);
-        }
-
-        // Sync clock with real time (6x faster)
-        function syncClock() {
-            const now = new Date();
+            drawParticles() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw connection lines between nearby particles
+                this.drawConnections();
+                
+                // Draw particle trails
+                this.particles.forEach(particle => {
+                    particle.trail.forEach((point, index) => {
+                        if (index === 0) return; // Skip current position
+                        
+                        const trailOpacity = (particle.currentOpacity * (1 - index / particle.trail.length)) * 0.3;
+                        const trailSize = particle.size * (1 - index / particle.trail.length) * 0.5;
+                        
+                        this.ctx.globalAlpha = trailOpacity;
+                        this.ctx.fillStyle = particle.color;
+                        this.ctx.beginPath();
+                        this.ctx.arc(point.x, point.y, trailSize, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    });
+                });
+                
+                // Draw main particles with glow
+                this.particles.forEach(particle => {
+                    const x = this.centerX + Math.cos(particle.currentAngle) * particle.currentRadius;
+                    const y = this.centerY + Math.sin(particle.currentAngle) * particle.currentRadius;
+                    
+                    // Outer glow
+                    this.ctx.globalAlpha = particle.currentOpacity * 0.3;
+                    const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, particle.glowSize);
+                    gradient.addColorStop(0, particle.color);
+                    gradient.addColorStop(1, 'transparent');
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, particle.glowSize, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // Core particle
+                    this.ctx.globalAlpha = particle.currentOpacity;
+                    this.ctx.fillStyle = particle.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, particle.size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // Bright center
+                    this.ctx.globalAlpha = particle.currentOpacity * 0.8;
+                    this.ctx.fillStyle = '#ffffff';
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, particle.size * 0.3, 0, Math.PI * 2);
+                    this.ctx.fill();
+                });
+                
+                this.ctx.globalAlpha = 1;
+            }
             
-            // Calculate total elapsed seconds since start of day, then multiply by 6
-            const realSecondsToday = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-            const fastSecondsTotal = (realSecondsToday * 6) % (12 * 3600); // Wrap around every 12 hours
+            drawConnections() {
+                const maxDistance = 40;
+                
+                for (let i = 0; i < this.particles.length; i++) {
+                    const p1 = this.particles[i];
+                    const x1 = this.centerX + Math.cos(p1.currentAngle) * p1.currentRadius;
+                    const y1 = this.centerY + Math.sin(p1.currentAngle) * p1.currentRadius;
+                    
+                    for (let j = i + 1; j < this.particles.length; j++) {
+                        const p2 = this.particles[j];
+                        
+                        // Only connect particles of the same type
+                        if (p1.type !== p2.type) continue;
+                        
+                        const x2 = this.centerX + Math.cos(p2.currentAngle) * p2.currentRadius;
+                        const y2 = this.centerY + Math.sin(p2.currentAngle) * p2.currentRadius;
+                        
+                        const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+                        
+                        if (distance < maxDistance) {
+                            const opacity = (1 - distance / maxDistance) * 0.2 * p1.currentOpacity;
+                            this.ctx.globalAlpha = opacity;
+                            this.ctx.strokeStyle = p1.color;
+                            this.ctx.lineWidth = 0.5;
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(x1, y1);
+                            this.ctx.lineTo(x2, y2);
+                            this.ctx.stroke();
+                        }
+                    }
+                }
+            }
             
-            // Break down the fast time into hours, minutes, seconds
-            const hours = Math.floor(fastSecondsTotal / 3600) % 12;
-            const minutes = Math.floor((fastSecondsTotal % 3600) / 60);
-            const seconds = Math.floor(fastSecondsTotal % 60);
-            
-            // Calculate initial rotation offsets based on fast time
-            const secondsRotation = (seconds * 6); // 6 degrees per second (smooth)
-            const minutesRotation = (minutes * 6); // 6 degrees per minute (discrete steps only)
-            const hoursRotation = (hours * 30); // 30 degrees per hour (discrete steps only)
-            
-            // Apply initial rotations
-            document.getElementById('outer-ring').style.transform = `rotate(${secondsRotation}deg)`;
-            document.getElementById('middle-ring').style.transform = `rotate(${minutesRotation}deg)`;
-            document.getElementById('inner-ring').style.transform = `rotate(${hoursRotation}deg)`;
-            
-            // Calculate animation delays to sync with fast time
-            const secondsDelay = -seconds;
-            const minutesDelay = -(minutes * 60 + seconds);
-            const hoursDelay = -(hours * 3600 + minutes * 60 + seconds);
-            
-            document.getElementById('outer-ring').style.animationDelay = `${secondsDelay}s`;
-            document.getElementById('middle-ring').style.animationDelay = `${minutesDelay}s`;
-            document.getElementById('inner-ring').style.animationDelay = `${hoursDelay}s`;
+            animate() {
+                this.updateParticles();
+                this.drawParticles();
+                requestAnimationFrame(() => this.animate());
+            }
         }
 
         // Initialize when page loads
         window.addEventListener('load', function() {
-            createPips();
-            syncClock();
+            const canvas = document.getElementById('particleCanvas');
+            const container = document.querySelector('.container');
+            
+            // Set canvas size based on container
+            const containerRect = container.getBoundingClientRect();
+            canvas.width = containerRect.width;
+            canvas.height = containerRect.height;
+            
+            // Create particle system
+            new ParticleSystem(canvas);
             
             // Fade in the main content and fade out the preloader
             document.body.classList.add('loaded');
@@ -332,6 +417,15 @@
             setTimeout(() => {
                 preloader.remove();
             }, 500);
+        });
+
+        // Handle resize
+        window.addEventListener('resize', function() {
+            const canvas = document.getElementById('particleCanvas');
+            const container = document.querySelector('.container');
+            const containerRect = container.getBoundingClientRect();
+            canvas.width = containerRect.width;
+            canvas.height = containerRect.height;
         });
     </script>
 </body>
